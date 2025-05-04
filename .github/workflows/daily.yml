@@ -27,3 +27,14 @@ jobs:
           ACCESS_TOKEN: ${{ secrets.SECRET }}
       - name: print md_file
         run: cat hacker_news.md
+      - name: Create GitHub Issue
+        uses: actions-ecosystem/action-create-issue@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Daily HN Digest - ${{ steps.date.outputs.today }}"
+          body: |
+            $(cat hacker_news.md)
+          labels: |
+            automated
+            news
+
