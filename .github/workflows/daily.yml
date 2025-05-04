@@ -25,3 +25,5 @@ jobs:
         run: python main.py
         env:
           ACCESS_TOKEN: ${{ secrets.SECRET }}
+      - name: print md_file
+        run: cat hacker_news.md
