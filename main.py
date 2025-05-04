@@ -43,6 +43,7 @@ def main():
     issue_body = md_file.file_data_text
     date = get_date()
     issue_url = create_issue('Daily Hacker News {}'.format(date), issue_body)
+    md_file.create_md_file()
 
     # unlock issue for people leave comment
     # if not lock_issue(issue_url):
