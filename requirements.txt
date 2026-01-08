@@ -3,4 +3,4 @@ charset-normalizer==3.4.3
 idna==3.10
 mdutils==1.7.0
 requests==2.32.5
-urllib3==2.5.0
+urllib3==2.6.3
