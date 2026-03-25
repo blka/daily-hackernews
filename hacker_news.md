@@ -1,7 +1,3 @@
-
-temp
-====
-
 # Daily Hacker News
 
 1. [**Box of Secrets: Discreetly modding an apartment intercom to work with Apple Home**](https://www.jackhogan.me/blog/box-of-secrets/) `www.jackhogan.me` [`comments`](https://news.ycombinator.com/item?id=47488686)
