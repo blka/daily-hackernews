@@ -1,0 +1,31 @@
+
+temp
+====
+
+# Daily Hacker News
+
+1. [**Box of Secrets: Discreetly modding an apartment intercom to work with Apple Home**](https://www.jackhogan.me/blog/box-of-secrets/) `www.jackhogan.me` [`comments`](https://news.ycombinator.com/item?id=47488686)
+2. [**Log File Viewer for the Terminal**](https://lnav.org/) `lnav.org` [`comments`](https://news.ycombinator.com/item?id=47498924)
+3. [**Show HN: ProofShot – Give AI coding agents eyes to verify the UI they build**](https://proofshot.argil.io/) `proofshot.argil.io` [`comments`](https://news.ycombinator.com/item?id=47499672)
+4. [**Opera: Rewind The Web to 1996 (Opera at 30)**](https://www.web-rewind.com) `www.web-rewind.com` [`comments`](https://news.ycombinator.com/item?id=47499721)
+5. [**BIO – The Bao I/O Co-Processor**](https://www.crowdsupply.com/baochip/dabao/updates/bio-the-bao-i-o-co-processor) `www.crowdsupply.com` [`comments`](https://news.ycombinator.com/item?id=47469744)
+6. [**Autoresearch on an old research idea**](https://ykumar.me/blog/eclip-autoresearch/) `ykumar.me` [`comments`](https://news.ycombinator.com/item?id=47493460)
+7. [**iPhone 17 Pro Demonstrated Running a 400B LLM**](https://twitter.com/anemll/status/2035901335984611412) `twitter.com` [`comments`](https://news.ycombinator.com/item?id=47490070)
+8. [**FCC updates covered list to include foreign-made consumer routers**](https://www.fcc.gov/document/fcc-updates-covered-list-include-foreign-made-consumer-routers) `www.fcc.gov` [`comments`](https://news.ycombinator.com/item?id=47495344)
+9. [**A 6502 disassembler with a TUI: A modern take on Regenerator**](https://github.com/ricardoquesada/regenerator2000) `github.com` [`comments`](https://news.ycombinator.com/item?id=47456997)
+10. [**Show HN: Cq – Stack Overflow for AI coding agents**](https://blog.mozilla.ai/cq-stack-overflow-for-agents/) `blog.mozilla.ai` [`comments`](https://news.ycombinator.com/item?id=47491466)
+11. [**Gerd Faltings, who proved the Mordell conjecture, wins the Abel Prize**](https://www.scientificamerican.com/article/gerd-faltings-mathematician-who-proved-the-mordell-conjecture-wins-the-abel/) `www.scientificamerican.com` [`comments`](https://news.ycombinator.com/item?id=47444387)
+12. [**Microservices and the First Law of Distributed Objects (2014)**](https://martinfowler.com/articles/distributed-objects-microservices.html) `martinfowler.com` [`comments`](https://news.ycombinator.com/item?id=47455961)
+13. [**Abusing Customizable Selects**](https://css-tricks.com/abusing-customizable-selects/) `css-tricks.com` [`comments`](https://news.ycombinator.com/item?id=47429393)
+14. [**Epoch confirms GPT5.4 Pro solved a frontier math open problem**](https://epoch.ai/frontiermath/open-problems/ramsey-hypergraphs) `epoch.ai` [`comments`](https://news.ycombinator.com/item?id=47497757)
+15. [**Dune3d: A parametric 3D CAD application**](https://github.com/dune3d/dune3d) `github.com` [`comments`](https://news.ycombinator.com/item?id=47475417)
+16. [**The Resolv hack: How one compromised key printed $23M**](https://www.chainalysis.com/blog/lessons-from-the-resolv-hack/) `www.chainalysis.com` [`comments`](https://news.ycombinator.com/item?id=47495719)
+17. [**Claude Code Cheat Sheet**](https://cc.storyfox.cz) `cc.storyfox.cz` [`comments`](https://news.ycombinator.com/item?id=47495527)
+18. [**How to Spot a Liar: Kate White on the Techniques of Deception in Mysteries**](https://crimereads.com/how-to-spot-a-liar-kate-white-on-the-techniques-of-deception-in-mysteries/) `crimereads.com` [`comments`](https://news.ycombinator.com/item?id=47455456)
+19. [**Pompeii's battle scars linked to an ancient 'machine gun'**](https://phys.org/news/2026-03-pompeii-scars-linked-ancient-machine.html) `phys.org` [`comments`](https://news.ycombinator.com/item?id=47453398)
+20. [**Finding all regex matches has always been O(n²)**](https://iev.ee/blog/the-quadratic-problem-nobody-fixed/) `iev.ee` [`comments`](https://news.ycombinator.com/item?id=47443903)
+21. [**IRIX 3dfx Voodoo driver and glide2x IRIX port**](https://sdz-mods.com/index.php/2026/03/23/irix-3dfx-voodoo-driver-glide2x-irix-port/) `sdz-mods.com` [`comments`](https://news.ycombinator.com/item?id=47496089)
+22. [**An incoherent Rust**](https://www.boxyuwu.blog/posts/an-incoherent-rust/) `www.boxyuwu.blog` [`comments`](https://news.ycombinator.com/item?id=47490648)
+23. [**Ju Ci: The Art of Repairing Porcelain**](https://thesublimeblog.org/2025/03/13/ju-ci-the-ancient-art-of-repairing-porcelain/) `thesublimeblog.org` [`comments`](https://news.ycombinator.com/item?id=47467719)
+24. [**Trivy under attack again: Widespread GitHub Actions tag compromise secrets**](https://socket.dev/blog/trivy-under-attack-again-github-actions-compromise) `socket.dev` [`comments`](https://news.ycombinator.com/item?id=47475888)
+25. [**Sunsetting the Techempower Framework Benchmarks**](https://github.com/TechEmpower/FrameworkBenchmarks/issues/10932) `github.com` [`comments`](https://news.ycombinator.com/item?id=47497763)
