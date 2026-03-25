@@ -1,4 +1,4 @@
-certifi==2025.10.5
+certifi==2026.2.25
 charset-normalizer==3.4.6
 idna==3.11
 mdutils==1.8.1
