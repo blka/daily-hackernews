@@ -1,2 +1,5 @@
 .idea
 venv
+hacker_news.md
+__pycache__/
+*.pyc
