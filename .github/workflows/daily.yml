@@ -1,31 +1,21 @@
 name: Daily HackerNews
 
 on:
-#  push:
-#    branches:
-#      - master
   schedule:
     - cron: '0 9 * * *'
-  workflow_dispatch:  # Allow manual triggering
-
+  workflow_dispatch:
 
 jobs:
   get_top_stories:
     runs-on: ubuntu-latest
-    #permissions:
-   #   issues: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: get started
+      - name: Run digest
         run: python main.py
         env:
           ACCESS_TOKEN: ${{ secrets.SECRET }}
-      #- name: print md_file
-      #  run: cat hacker_news.md
-
-
