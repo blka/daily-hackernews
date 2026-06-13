@@ -25,8 +25,8 @@ class Story:
 
 
 def _extract_domain(url: str) -> str:
-    """Extract the domain from a URL."""
-    m = re.search(r"https?://([A-Za-z_0-9.-]+)", url)
+    """Extract the domain from a URL, stripping www. prefix."""
+    m = re.search(r"https?://(?:www\.)?([A-Za-z_0-9.-]+)", url)
     return m.group(1) if m else url
 
 
