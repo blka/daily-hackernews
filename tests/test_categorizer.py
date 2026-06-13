@@ -50,6 +50,47 @@ class TestCategorizeStory:
         s = Story(id=8, title="New RISC-V chip announced", url="https://example.com/chip", domain="example.com", score=150, descendants=25, by="user")
         assert categorize_story(s) == Category.HARDWARE
 
+    def test_security_keyword_surveillance(self):
+        s = Story(id=9, title="Surveillance is not safety", url="https://signal.org/blog", domain="signal.org", score=690, descendants=340, by="user")
+        assert categorize_story(s) == Category.SECURITY
+
+    def test_security_keyword_certificate(self):
+        s = Story(id=10, title="Let's Encrypt bans certificate usage", url="https://letsencrypt.org/docs", domain="letsencrypt.org", score=454, descendants=380, by="user")
+        assert categorize_story(s) == Category.SECURITY
+
+    def test_ai_keyword_diffusion(self):
+        s = Story(id=11, title="DiffusionGemma: 4x Faster Text Generation", url="https://blog.google/ai", domain="blog.google", score=325, descendants=87, by="user")
+        assert categorize_story(s) == Category.AI_ML
+
+    def test_programming_keyword_emacs(self):
+        s = Story(id=12, title="Emacs appearances in pop culture", url="https://example.com/emacs", domain="example.com", score=402, descendants=116, by="user")
+        assert categorize_story(s) == Category.PROGRAMMING
+
+    def test_devops_keyword_chrome(self):
+        s = Story(id=13, title="Chrome is looking to permanently drop MV2 extension", url="https://neowin.net/article", domain="neowin.net", score=412, descendants=440, by="user")
+        assert categorize_story(s) == Category.DEVOPS
+
+    def test_devops_domain_pgdog(self):
+        s = Story(id=14, title="PgDog is funded and coming", url="https://pgdog.dev/blog", domain="pgdog.dev", score=541, descendants=259, by="user")
+        # pgdog.dev not in domain map, "funded" not a keyword — falls to Science/Other
+        assert categorize_story(s) == Category.SCIENCE
+
+    def test_business_keyword_datacenter(self):
+        s = Story(id=15, title="Farmer donates land, city sells for data center", url="https://example.com/dc", domain="example.com", score=474, descendants=3, by="user")
+        assert categorize_story(s) == Category.BUSINESS
+
+    def test_hardware_keyword_motor(self):
+        s = Story(id=16, title="Mercedes starts production of electric axial flux motor", url="https://example.com/motor", domain="example.com", score=544, descendants=350, by="user")
+        assert categorize_story(s) == Category.HARDWARE
+
+    def test_security_domain_signal(self):
+        s = Story(id=17, title="Some signal post", url="https://signal.org/blog/post", domain="signal.org", score=100, descendants=10, by="user")
+        assert categorize_story(s) == Category.SECURITY
+
+    def test_ai_domain_blog_google(self):
+        s = Story(id=18, title="Google AI announcement", url="https://blog.google/innovation/ai/", domain="blog.google", score=200, descendants=20, by="user")
+        assert categorize_story(s) == Category.AI_ML
+
 
 class TestCategorize:
     def test_categorize_groups_stories(self):
