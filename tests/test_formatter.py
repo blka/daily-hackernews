@@ -73,7 +73,10 @@ class TestRenderDigest:
         result = render_digest(stories, date="13/06/2026")
         assert "1.2k" in result
 
-    def test_render_digest_has_table(self):
-        stories = [Story(id=1, title="Test", score=10, descendants=5, url="http://test.com", domain="test.com", by="user")]
+    def test_render_digest_has_card_layout(self):
+        stories = [Story(id=1, title="Test Story", score=10, descendants=5, url="http://test.com", domain="test.com", by="user")]
         output = render_digest(stories, date="2026-07-09")
-        assert "| # | Title | Domain | Score | Comments |" in output
+
+        assert "**[Test Story](http://test.com)**" in output
+        assert "`test.com` · ⭐ 10 · [💬 5]" in output
+        assert "***" in output
