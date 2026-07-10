@@ -14,10 +14,10 @@
 {% for cat in categories %}
 ## {{ cat.emoji }} {{ cat.value }}
 
-| # | Title | Domain | Score | Comments |
-|---|---|---|---|---|
 {% for story in cat_stories[cat] %}
-| {{ loop.index }} | {% if story.url %}[{{ story.title }}]({{ story.url }}){% else %}{{ story.title }}{% endif %} | {% if story.domain %}{{ story.domain }}{% else %}—{% endif %} | {{ story.score | fmt_score }} | [💬 {{ story.descendants }}](https://news.ycombinator.com/item?id={{ story.id }}) |
+{{ loop.index }}. **{% if story.url %}[{{ story.title }}]({{ story.url }}){% else %}{{ story.title }}{% endif %}**
+   {% if story.domain %}`{{ story.domain }}`{% endif %} · ⭐ {{ story.score | fmt_score }} · [💬 {{ story.descendants }}](https://news.ycombinator.com/item?id={{ story.id }})
+   ***
 {% endfor %}
 
 ---
