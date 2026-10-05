@@ -19,7 +19,9 @@ CATEGORY_ORDER: list[Category] = [
     Category.BUSINESS,
     Category.DESIGN,
     Category.HARDWARE,
+    Category.HISTORY,
     Category.SCIENCE,
+    Category.OTHER,
 ]
 
 CATEGORY_EMOJI: dict[Category, str] = {
@@ -27,10 +29,12 @@ CATEGORY_EMOJI: dict[Category, str] = {
     Category.AI_ML: "🤖",
     Category.SECURITY: "🔒",
     Category.DEVOPS: "🛠",
-    Category.BUSINESS: "🚀",
+    Category.BUSINESS: "🏢",
     Category.DESIGN: "🎨",
     Category.HARDWARE: "🔧",
+    Category.HISTORY: "🕰",
     Category.SCIENCE: "🔬",
+    Category.OTHER: "🧩",
 }
 
 TOP_STORIES_COUNT = 5
@@ -84,7 +88,7 @@ def render_digest(stories: list[Story], date: str) -> str:
 
     # Top stories by score
     sorted_stories = sorted(stories, key=lambda s: s.score, reverse=True)
-    top_stories = sorted_stories[:TOP_STORIES_COUNT]
+    top_story_ids = {s.id for s in sorted_stories[:TOP_STORIES_COUNT]}
 
     # Ordered categories that have stories
     categories = [_CategoryView(cat) for cat in CATEGORY_ORDER if cat in categorized]
@@ -105,7 +109,7 @@ def render_digest(stories: list[Story], date: str) -> str:
     return template.render(
         date=date,
         stories=stories,
-        top_stories=top_stories,
+        top_story_ids=top_story_ids,
         categories=categories,
         cat_stories=dict(cat_stories),
         avg_score=_get_avg_score(stories),

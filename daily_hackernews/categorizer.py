@@ -13,10 +13,12 @@ class Category(Enum):
     AI_ML = "AI/ML"
     SECURITY = "Security"
     DEVOPS = "DevOps/Infra"
-    BUSINESS = "Business/Startups"
+    BUSINESS = "Business/Tech"
     DESIGN = "Design/Product"
     HARDWARE = "Hardware/IoT"
-    SCIENCE = "Science/Other"
+    HISTORY = "History/Retro"
+    SCIENCE = "Science"
+    OTHER = "Other/Misc"
 
 
 # Domain → Category (first match wins)
@@ -80,9 +82,19 @@ DOMAIN_MAP: dict[str, Category] = {
     "raspberrypi.com": Category.HARDWARE,
     "sparkfun.com": Category.HARDWARE,
     "arduino.cc": Category.HARDWARE,
-    # Science/Other
+    # Science
     "nature.com": Category.SCIENCE,
     "sciencedirect.com": Category.SCIENCE,
+    "spectrum.ieee.org": Category.SCIENCE,
+    "nobelprize.org": Category.SCIENCE,
+    "cambridge.org": Category.SCIENCE,
+    # Programming
+    "haskell.org": Category.PROGRAMMING,
+    "sqlite.org": Category.PROGRAMMING,
+    "whatwg.org": Category.PROGRAMMING,
+    "w3.org": Category.PROGRAMMING,
+    # Business/Tech
+    "cnbc.com": Category.BUSINESS,
 }
 
 # Keyword → Category (case-insensitive match in title, first match wins)
@@ -108,6 +120,7 @@ KEYWORD_MAP: list[tuple[str, Category]] = [
     ("LLM", Category.AI_ML),
     ("GPT", Category.AI_ML),
     ("neural", Category.AI_ML),
+    ("intelligence", Category.AI_ML),
     ("machine learning", Category.AI_ML),
     ("transformer", Category.AI_ML),
     ("deep learning", Category.AI_ML),
@@ -122,6 +135,17 @@ KEYWORD_MAP: list[tuple[str, Category]] = [
     ("rust", Category.PROGRAMMING),
     ("javascript", Category.PROGRAMMING),
     ("typescript", Category.PROGRAMMING),
+    ("haskell", Category.PROGRAMMING),
+    ("golang", Category.PROGRAMMING),
+    ("concurrency", Category.PROGRAMMING),
+    ("css", Category.PROGRAMMING),
+    ("html", Category.PROGRAMMING),
+    ("svelte", Category.PROGRAMMING),
+    ("simd", Category.PROGRAMMING),
+    ("regex", Category.PROGRAMMING),
+    ("debugger", Category.PROGRAMMING),
+    ("kernel", Category.PROGRAMMING),
+    ("sqlite", Category.PROGRAMMING),
     ("compiler", Category.PROGRAMMING),
     ("language", Category.PROGRAMMING),
     ("framework", Category.PROGRAMMING),
@@ -137,7 +161,9 @@ KEYWORD_MAP: list[tuple[str, Category]] = [
     ("Git", Category.PROGRAMMING),
     ("database", Category.DEVOPS),
     ("PostgreSQL", Category.DEVOPS),
+    ("Postgres", Category.DEVOPS),
     ("Redis", Category.DEVOPS),
+    ("sql", Category.DEVOPS),
     # DevOps/Infra
     ("kubernetes", Category.DEVOPS),
     ("docker", Category.DEVOPS),
@@ -153,7 +179,33 @@ KEYWORD_MAP: list[tuple[str, Category]] = [
     ("Chrome", Category.DEVOPS),
     ("Firefox", Category.DEVOPS),
     ("Safari", Category.DEVOPS),
-    # Business/Startups
+    # History/Retro (before Business so "history" beats company names)
+    ("history", Category.HISTORY),
+    ("retro", Category.HISTORY),
+    ("vintage", Category.HISTORY),
+    ("nostalgia", Category.HISTORY),
+    ("amiga", Category.HISTORY),
+    ("commodore", Category.HISTORY),
+    ("floppy", Category.HISTORY),
+    ("cassette", Category.HISTORY),
+    ("museum", Category.HISTORY),
+    # Business/Tech
+    ("microsoft", Category.BUSINESS),
+    ("google", Category.BUSINESS),
+    ("apple", Category.BUSINESS),
+    ("meta", Category.BUSINESS),
+    ("amazon", Category.BUSINESS),
+    ("samsung", Category.BUSINESS),
+    ("nvidia", Category.BUSINESS),
+    ("amd", Category.BUSINESS),
+    ("qualcomm", Category.BUSINESS),
+    ("huawei", Category.BUSINESS),
+    ("outage", Category.BUSINESS),
+    ("layoff", Category.BUSINESS),
+    ("ceo", Category.BUSINESS),
+    ("antitrust", Category.BUSINESS),
+    ("lawsuit", Category.BUSINESS),
+    ("valuation", Category.BUSINESS),
     ("startup", Category.BUSINESS),
     ("VC", Category.BUSINESS),
     ("funding", Category.BUSINESS),
@@ -184,7 +236,7 @@ KEYWORD_MAP: list[tuple[str, Category]] = [
     ("interface", Category.DESIGN),
     ("usability", Category.DESIGN),
     ("accessibility", Category.DESIGN),
-    # Science/Other
+    # Science
     ("quantum", Category.SCIENCE),
     ("physics", Category.SCIENCE),
     ("biology", Category.SCIENCE),
@@ -195,14 +247,20 @@ KEYWORD_MAP: list[tuple[str, Category]] = [
     ("Mars", Category.SCIENCE),
     ("NASA", Category.SCIENCE),
     ("telescope", Category.SCIENCE),
+    ("medicine", Category.SCIENCE),
 ]
 
 
 def categorize_story(story: Story) -> Category:
-    """Assign a category to a single story. Domain match takes priority over keyword."""
+    """Assign a category to a single story. Domain match takes priority over keyword.
+
+    Domain match is suffix-based: "blog.haskell.org" matches "haskell.org".
+    """
     # 1. Domain match
-    if story.domain and story.domain in DOMAIN_MAP:
-        return DOMAIN_MAP[story.domain]
+    if story.domain:
+        for domain, category in DOMAIN_MAP.items():
+            if story.domain == domain or story.domain.endswith("." + domain):
+                return category
 
     # 2. Keyword match (case-insensitive, first match wins)
     title_lower = story.title.lower()
@@ -211,7 +269,7 @@ def categorize_story(story: Story) -> Category:
             return category
 
     # 3. No match
-    return Category.SCIENCE
+    return Category.OTHER
 
 
 def categorize(stories: list[Story]) -> dict[Category, list[Story]]:
