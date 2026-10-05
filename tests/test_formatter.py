@@ -30,14 +30,42 @@ class TestRenderDigest:
         result = render_digest(stories, date="13/06/2026")
         assert "Daily Hacker News — 13/06/2026" in result
 
-    def test_renders_top_stories(self):
+    def test_no_top_stories_section(self):
         stories = [
             Story(id=1, title="Top story", url="https://example.com", domain="example.com", score=500, descendants=50, by="user"),
             Story(id=2, title="Low story", url="https://other.com", domain="other.com", score=10, descendants=1, by="user"),
         ]
         result = render_digest(stories, date="13/06/2026")
         assert "Top story" in result
-        assert "🔥 Top Stories" in result
+        assert "Top Stories" not in result
+
+    def test_top_five_stories_get_fire_marker(self):
+        stories = [
+            Story(id=i, title=f"Story {i}", url="https://github.com/rust", domain="github.com", score=600 - i, descendants=10, by="user")
+            for i in range(1, 7)
+        ]
+        result = render_digest(stories, date="13/06/2026")
+        assert result.count("🔥") == 5
+
+    def test_low_score_story_has_no_fire_marker(self):
+        stories = [
+            Story(id=i, title=f"Story {i}", url="https://github.com/rust", domain="github.com", score=600 - i, descendants=10, by="user")
+            for i in range(1, 6)
+        ]
+        stories.append(
+            Story(id=6, title="Cold story", url="https://other.com", domain="other.com", score=10, descendants=1, by="user")
+        )
+        result = render_digest(stories, date="13/06/2026")
+        assert result.count("🔥") == 5
+        assert "🔥 [Cold story]" not in result
+
+    def test_fewer_than_five_stories_all_marked(self):
+        stories = [
+            Story(id=i, title=f"Story {i}", url="https://github.com/rust", domain="github.com", score=100 - i, descendants=10, by="user")
+            for i in range(1, 4)
+        ]
+        result = render_digest(stories, date="13/06/2026")
+        assert result.count("🔥") == 3
 
     def test_renders_category_sections(self):
         stories = [
@@ -45,6 +73,19 @@ class TestRenderDigest:
         ]
         result = render_digest(stories, date="13/06/2026")
         assert "💻 Programming" in result
+
+    def test_self_post_title_links_to_hn_item(self):
+        stories = [
+            Story(id=1, title="Tell HN: Something", url=None, domain=None, score=500, descendants=20, by="user"),
+        ]
+        result = render_digest(stories, date="13/06/2026")
+        # Self-post has no URL — the title links to the HN item itself.
+        assert "[Tell HN: Something](https://news.ycombinator.com/item?id=1)" in result
+        # And the 💬 comment link is not duplicated next to it.
+        assert "[💬 20](https://news.ycombinator.com/item?id=1)" not in result
+        # Meta line has no dangling leading separator when domain is absent.
+        meta = next(l for l in result.split("\n") if "⭐ 500" in l)
+        assert meta.lstrip().startswith("⭐")
 
     def test_renders_ask_hn(self):
         stories = [
@@ -74,9 +115,19 @@ class TestRenderDigest:
         assert "1.2k" in result
 
     def test_render_digest_has_card_layout(self):
-        stories = [Story(id=1, title="Test Story", score=10, descendants=5, url="http://test.com", domain="test.com", by="user")]
+        # Five fillers keep "Test Story" outside the top-5 so the card
+        # layout is asserted without the 🔥 top-story marker.
+        stories = [
+            Story(id=i, title=f"Filler {i}", score=500, descendants=5, url="http://filler.com", domain="github.com", by="user")
+            for i in range(2, 7)
+        ]
+        stories.append(
+            Story(id=1, title="Test Story", score=10, descendants=5, url="http://test.com", domain="test.com", by="user")
+        )
         output = render_digest(stories, date="2026-07-09")
 
         assert "**[Test Story](http://test.com)**" in output
         assert "`test.com` · ⭐ 10 · [💬 5]" in output
-        assert "***" in output
+        # Item separators are gone; only `---` between sections remains.
+        assert "***" not in output
+        assert "---" in output

@@ -32,7 +32,8 @@ def test_full_pipeline(mock_fetch, mock_create, mock_lock):
     assert call_args[0][0].startswith("Daily Hacker News")
     # Verify the body contains expected sections
     body = call_args[0][1]
-    assert "🔥 Top Stories" in body
+    assert "Top Stories" not in body
+    assert "🔥 [Rust 2026 Released]" in body
     assert "💻 Programming" in body
     assert "🤖 AI/ML" in body
     assert "🔒 Security" in body

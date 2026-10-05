@@ -2,22 +2,14 @@
 
 > **Daily Stats:** {{ stories | length }} stories · avg score: {{ avg_score }} · top domain: {{ top_domain }}
 
-## 🔥 Top Stories
-
-{% for story in top_stories %}
-{{ loop.index }}. **{{ story.title }}** {% if story.domain %}`{{ story.domain }}`{% endif %} — ⭐ {{ story.score | fmt_score }} · 💬 {{ story.descendants }}
-   {% if story.url %}[Article]({{ story.url }}) · {% endif %}[Comments](https://news.ycombinator.com/item?id={{ story.id }})
-{% endfor %}
-
 ---
 
 {% for cat in categories %}
 ## {{ cat.emoji }} {{ cat.value }}
 
 {% for story in cat_stories[cat] %}
-{{ loop.index }}. **{% if story.url %}[{{ story.title }}]({{ story.url }}){% else %}{{ story.title }}{% endif %}**
-   {% if story.domain %}`{{ story.domain }}`{% endif %} · ⭐ {{ story.score | fmt_score }} · [💬 {{ story.descendants }}](https://news.ycombinator.com/item?id={{ story.id }})
-   ***
+{{ loop.index }}. **{% if story.id in top_story_ids %}🔥 {% endif %}{% if story.url %}[{{ story.title }}]({{ story.url }}){% else %}[{{ story.title }}](https://news.ycombinator.com/item?id={{ story.id }}){% endif %}**
+   {% if story.domain %}`{{ story.domain }}` · {% endif %}⭐ {{ story.score | fmt_score }} · {% if story.url %}[💬 {{ story.descendants }}](https://news.ycombinator.com/item?id={{ story.id }}){% else %}💬 {{ story.descendants }}{% endif %}
 {% endfor %}
 
 ---
