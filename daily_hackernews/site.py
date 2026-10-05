@@ -15,7 +15,7 @@ from markdown import markdown
 
 REPO_ISSUES_URL = "https://api.github.com/repos/blka/daily-hackernews/issues"
 
-_DATE_RE = re.compile(r"Daily Hacker News (\d{2}/\d{2}/\d{4})")
+_DATE_RE = re.compile(r"Daily Hacker News (\d{2}[/\-]\d{2}[/\-]\d{4})")
 
 _CSS = """
 body { font-family: -apple-system, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
@@ -33,7 +33,7 @@ def parse_issue_date(title: str) -> tuple[str, str, str] | None:
     m = _DATE_RE.search(title)
     if not m:
         return None
-    day, month, year = m.group(1).split("/")
+    day, month, year = re.split(r"/|-", m.group(1))
     return year, month, day
 
 

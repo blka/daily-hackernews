@@ -11,6 +11,10 @@ class TestParseIssueDate:
     def test_parses_dd_mm_yyyy_title(self):
         assert parse_issue_date("Daily Hacker News 04/10/2026") == ("2026", "10", "04")
 
+    def test_parses_dd_mm_yyyy_with_dashes(self):
+        # Older issues used DD-MM-YYYY.
+        assert parse_issue_date("Daily Hacker News 14-04-2026") == ("2026", "04", "14")
+
     def test_no_date_returns_none(self):
         assert parse_issue_date("Each Top Story is shown twice") is None
 
