@@ -12,6 +12,7 @@ import sys
 
 import requests
 from markdown import markdown
+import nh3
 
 REPO_ISSUES_URL = "https://api.github.com/repos/blka/daily-hackernews/issues"
 
@@ -26,6 +27,15 @@ blockquote { color: #555; border-left: 3px solid #ddd; margin: 0; padding-left: 
 code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 3px; }
 nav { margin: 0 0 1rem; }
 """
+
+# Digests render h1-h6, lists, code, blockquote and links — nothing else is needed.
+_ALLOWED_TAGS = {
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "p", "a", "strong", "em", "code", "pre", "blockquote", "hr",
+    "ul", "ol", "li", "br",
+    "table", "thead", "tbody", "th", "tr", "td",
+    "del", "span",
+}
 
 
 def parse_issue_date(title: str) -> tuple[str, str, str] | None:
@@ -44,8 +54,14 @@ def issue_date(title: str) -> str:
 
 
 def _body_to_html(body: str) -> str:
-    """Escape the raw markdown, then convert to HTML."""
-    return markdown(html.escape(body, quote=False), extensions=["extra"])
+    """Escape the raw markdown, convert to HTML, sanitize the output."""
+    raw = markdown(html.escape(body, quote=False), extensions=["extra"])
+    return nh3.clean(
+        raw,
+        tags=_ALLOWED_TAGS,
+        attributes={"a": {"href", "title"}},
+        url_schemes={"http", "https", "mailto"},
+    )
 
 
 def fetch_issues() -> list[dict]:
@@ -60,9 +76,11 @@ def fetch_issues() -> list[dict]:
             headers={"Accept": "application/vnd.github+json"},
         )
         resp.raise_for_status()
-        batch = [i for i in resp.json() if "pull_request" not in i]
-        issues.extend(batch)
-        if len(batch) < 100:
+        raw = resp.json()
+        issues.extend(i for i in raw if "pull_request" not in i)
+        # Count the raw response: PRs filtered out would shrink a full page
+        # and stop the fetch early.
+        if len(raw) < 100:
             break
         page += 1
     return issues
@@ -71,33 +89,51 @@ def fetch_issues() -> list[dict]:
 def build_site(issues: list[dict], out_dir: str) -> None:
     """Render index.html and digests/<YYYY>-<MM>-<DD>.html into out_dir."""
     digests = [
-        {"date": parse_issue_date(i["title"]), "title": i["title"], "html_url": i["html_url"], "body": i["body"] or ""}
+        {"date": parse_issue_date(i["title"]), "title": i["title"], "html_url": i["html_url"], "body": i["body"] or "", "number": i.get("number", 0) or 0}
         for i in issues
         if parse_issue_date(i["title"]) is not None
     ]
-    # newest first (titles sort by day/month/year strings)
-    digests.sort(key=lambda d: d["date"], reverse=True)
+    # Newest first, then keep one issue per date — a repeated daily run produces
+    # two issues with the same date, and one page must survive per date.
+    digests.sort(key=lambda d: (d["date"], d["number"]), reverse=True)
+    seen: set = set()
+    unique = []
+    for d in digests:
+        if d["date"] in seen:
+            continue
+        seen.add(d["date"])
+        unique.append(d)
+    digests = unique
 
     os.makedirs(os.path.join(out_dir, "digests"), exist_ok=True)
 
-    index_links = []
+    page_writes = []
     for d in digests:
         year, month, day = d["date"]
         page_path = f"digests/{year}-{month}-{day}.html"
-        page = _page(f"<h1>{d['title']}</h1>\n{_body_to_html(d['body'])}")
-        with open(os.path.join(out_dir, page_path), "w") as f:
+        page = _page(f"<h1>{html.escape(d['title'], quote=False)}</h1>\n{_body_to_html(d['body'])}")
+        with open(os.path.join(out_dir, page_path), "w", encoding="utf-8") as f:
             f.write(page)
-        index_links.append((page_path, d["title"]))
+        page_writes.append((page_path, year, d["title"]))
 
-    latest = digests[0] if digests else None
-    index = "<h1>Daily Hacker News</h1>\n<nav>"
-    index += "".join(f'\n<a href="{p}">{t}</a>' for p, t in index_links)
-    index += "</nav>\n"
+    latest = page_writes[0] if page_writes else None
+    index = "<h1>Daily Hacker News</h1>\n"
     if latest:
-        year, month, day = latest["date"]
-        index += f'\n<h2><a href="digests/{year}-{month}-{day}.html">{latest["title"]}</a></h2>'
-        index += "\n" + _body_to_html(latest["body"])
-    with open(os.path.join(out_dir, "index.html"), "w") as f:
+        page_path, year, title = latest
+        index += f'\n<h2><a href="{page_path}">{html.escape(title, quote=False)}</a></h2>'
+        index += "\n" + _body_to_html(digests[0]["body"])
+
+    # Collapsed archive, grouped by year — keeps the index short.
+    index += '\n<hr>\n<details>\n<summary>Archive — all days</summary>\n'
+    by_year: dict[str, list[str]] = {}
+    for page_path, year, title in page_writes:
+        by_year.setdefault(year, []).append(
+            f'<li><a href="{page_path}">{html.escape(title, quote=False)}</a></li>'
+        )
+    for year in by_year:
+        index += f"\n<strong>{year}</strong>\n<ul>" + "".join(by_year[year]) + "</ul>"
+    index += "\n</details>\n"
+    with open(os.path.join(out_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(_page(index))
 
 
