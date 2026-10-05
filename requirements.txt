@@ -3,5 +3,6 @@ charset-normalizer==3.5.2
 idna==3.20
 jinja2>=3.1.6
 markdown>=3.7
+nh3>=0.2
 requests==2.34.2
 urllib3==2.8.0
