@@ -7,7 +7,7 @@ import logging
 
 from daily_hackernews.fetcher import fetch_stories
 from daily_hackernews.formatter import render_digest
-from daily_hackernews.publisher import create_issue, lock_issue
+from daily_hackernews.publisher import create_issue, find_issue_by_title, lock_issue
 
 STORY_COUNT = 25
 
@@ -23,6 +23,12 @@ def get_date() -> str:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
+    date = get_date()
+    existing = find_issue_by_title(f"Daily Hacker News {date}")
+    if existing is not None:
+        logger.info("Digest for %s already exists (#%d). Skipping.", date, existing)
+        return
+
     logger.info("Fetching top %d stories from Hacker News...", STORY_COUNT)
     stories = fetch_stories(STORY_COUNT)
 
@@ -31,7 +37,6 @@ def main() -> None:
         return
 
     logger.info("Fetched %d stories. Rendering digest...", len(stories))
-    date = get_date()
     body = render_digest(stories, date=date)
 
     logger.info("Creating GitHub Issue for %s...", date)

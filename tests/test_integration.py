@@ -15,10 +15,12 @@ def _mock_stories():
     ]
 
 
+@patch("daily_hackernews.main.find_issue_by_title")
 @patch("daily_hackernews.main.lock_issue")
 @patch("daily_hackernews.main.create_issue")
 @patch("daily_hackernews.main.fetch_stories")
-def test_full_pipeline(mock_fetch, mock_create, mock_lock):
+def test_full_pipeline(mock_fetch, mock_create, mock_lock, mock_find):
+    mock_find.return_value = None
     mock_fetch.return_value = _mock_stories()
     mock_create.return_value = "https://github.com/blka/daily-hackernews/issues/1"
     mock_lock.return_value = True
