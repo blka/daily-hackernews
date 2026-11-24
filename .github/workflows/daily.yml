@@ -9,8 +9,8 @@ jobs:
   get_top_stories:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.10'
       - name: Install dependencies
@@ -31,14 +31,14 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.10'
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Restore site cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: site
           key: site-${{ github.run_id }}
@@ -47,10 +47,10 @@ jobs:
         run: python -m daily_hackernews.site site
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
