@@ -10,6 +10,7 @@ import json
 import os
 import re
 import sys
+import time
 
 import requests
 from markdown import markdown
@@ -65,18 +66,38 @@ def _body_to_html(body: str) -> str:
     )
 
 
-def fetch_issues() -> list[dict]:
+def _api_get(url: str, params: dict, token: str | None) -> requests.Response:
+    """GET GitHub API; retry bounded on 403/429 (shared-runner rate limits)."""
+    headers = {"Accept": "application/vnd.github+json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    for attempt in range(4):
+        resp = requests.get(url, params=params, timeout=30, headers=headers)
+        try:
+            resp.raise_for_status()
+            return resp
+        except requests.exceptions.HTTPError:
+            if resp.status_code not in (403, 429) or attempt == 3:
+                raise
+            reset = resp.headers.get("X-RateLimit-Reset")
+            if reset:
+                delay = min(max(int(reset) - int(time.time()), 1), 120)
+            else:
+                delay = 5 * 2 ** attempt
+            time.sleep(delay)
+    raise RuntimeError("unreachable")
+
+
+def fetch_issues(token: str | None = None) -> list[dict]:
     """Fetch all issues labeled daily-digest, newest first."""
     issues: list[dict] = []
     page = 1
     while True:
-        resp = requests.get(
+        resp = _api_get(
             REPO_ISSUES_URL,
-            params={"labels": "daily-digest", "per_page": 100, "page": page},
-            timeout=30,
-            headers={"Accept": "application/vnd.github+json"},
+            {"labels": "daily-digest", "per_page": 100, "page": page},
+            token,
         )
-        resp.raise_for_status()
         raw = resp.json()
         issues.extend(i for i in raw if "pull_request" not in i)
         # Count the raw response: PRs filtered out would shrink a full page

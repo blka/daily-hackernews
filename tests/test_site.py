@@ -159,6 +159,85 @@ class TestManifest:
         assert load_manifest(str(tmp_path)) is None  # duplicate dates
 
 
+class TestFetchAuth:
+    def _resp(self, data, status=200, headers=None):
+        import requests
+
+        class R:
+            def __init__(self):
+                self.status_code = status
+                self.headers = headers or {}
+
+            def json(self):
+                return data
+
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise requests.exceptions.HTTPError(
+                        f"{self.status_code}",
+                        response=type("X", (), {"status_code": self.status_code})(),
+                    )
+
+        return R()
+
+    def test_token_sends_authorization_header(self, monkeypatch):
+        import daily_hackernews.site as site
+
+        seen = {}
+
+        def fake_get(url, **kwargs):
+            seen.update(kwargs)
+            return self._resp([])
+
+        monkeypatch.setattr(site.requests, "get", fake_get)
+        site.fetch_issues(token="T0K3N")
+        assert seen["headers"]["Authorization"] == "Bearer T0K3N"
+
+    def test_no_token_omits_authorization(self, monkeypatch):
+        import daily_hackernews.site as site
+
+        seen = {}
+
+        def fake_get(url, **kwargs):
+            seen.update(kwargs)
+            return self._resp([])
+
+        monkeypatch.setattr(site.requests, "get", fake_get)
+        site.fetch_issues()
+        assert "Authorization" not in seen["headers"]
+
+    def test_retry_on_rate_limit_then_success(self, monkeypatch):
+        import daily_hackernews.site as site
+
+        issues = [_issue("01/10/2026", "# x", number=n) for n in range(50)]
+        calls, sleeps = [], []
+
+        def fake_get(url, **kwargs):
+            calls.append(1)
+            return self._resp([], status=403) if len(calls) == 1 else self._resp(issues)
+
+        monkeypatch.setattr(site.requests, "get", fake_get)
+        monkeypatch.setattr(site.time, "sleep", sleeps.append)
+        result = site.fetch_issues(token="T")
+        assert len(calls) == 2 and len(sleeps) == 1 and len(result) == 50
+
+    def test_limited_retry_then_loud_failure(self, monkeypatch):
+        import pytest
+        import daily_hackernews.site as site
+
+        calls, sleeps = [], []
+
+        def fake_get(url, **kwargs):
+            calls.append(1)
+            return self._resp([], status=403)
+
+        monkeypatch.setattr(site.requests, "get", fake_get)
+        monkeypatch.setattr(site.time, "sleep", sleeps.append)
+        with pytest.raises(Exception):
+            site.fetch_issues(token="T")
+        assert len(calls) == 4 and len(sleeps) == 3
+
+
 class TestFetchIssues:
     def test_pagination_continues_past_pr_page(self, monkeypatch):
         import daily_hackernews.site as site
