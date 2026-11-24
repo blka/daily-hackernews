@@ -267,3 +267,73 @@ class TestFetchIssues:
         # 100 issues from page 1 (PR excluded) + 50 from page 2: no early stop
         assert len(result) == 149
         assert [c["page"] for c in calls] == [1, 2]
+
+    def test_early_stop_reduces_pages(self, monkeypatch):
+        import daily_hackernews.site as site
+
+        page1 = [_issue("05/10/2026", "# x", number=n) for n in range(300, 200, -1)]
+        page2 = [_issue("04/10/2026", "# y", number=n) for n in range(200, 100, -1)]
+        calls = []
+
+        def fake_get(url, **kwargs):
+            calls.append(kwargs["params"]["page"])
+
+            class FakeResp:
+                def json(self):
+                    return page1 if kwargs["params"]["page"] == 1 else page2
+
+                def raise_for_status(self):
+                    pass
+
+            return FakeResp()
+
+        monkeypatch.setattr(site.requests, "get", fake_get)
+        result = site.fetch_issues(stop_below=150)
+        assert calls == [1, 2]
+        assert {i["number"] for i in result} == set(range(101, 301))
+
+    def test_no_early_stop_when_none(self, monkeypatch):
+        import daily_hackernews.site as site
+
+        page1 = [_issue("05/10/2026", "# x", number=n) for n in range(300, 200, -1)]
+        page2 = [_issue("04/10/2026", "# y", number=n) for n in range(200, 101, -1)]  # 99 < 100
+        calls = []
+
+        def fake_get(url, **kwargs):
+            calls.append(kwargs["params"]["page"])
+
+            class FakeResp:
+                def json(self):
+                    return page1 if kwargs["params"]["page"] == 1 else page2
+
+                def raise_for_status(self):
+                    pass
+
+            return FakeResp()
+
+        monkeypatch.setattr(site.requests, "get", fake_get)
+        site.fetch_issues()
+        assert calls == [1, 2]  # without stop_below, everything is paged
+
+    def test_early_stop_counts_raw_page_with_pr(self, monkeypatch):
+        import daily_hackernews.site as site
+
+        calls = []
+        pr_page = [{"number": 99, "title": "PR", "pull_request": {"url": "x"}}]
+
+        def fake_get(url, **kwargs):
+            calls.append(1)
+
+            class FakeResp:
+                def json(self):
+                    return pr_page
+
+                def raise_for_status(self):
+                    pass
+
+            return FakeResp()
+
+        monkeypatch.setattr(site.requests, "get", fake_get)
+        result = site.fetch_issues(stop_below=150)
+        assert len(calls) == 1  # raw page shorter than 100 → stop, no page 2
+        assert result == []

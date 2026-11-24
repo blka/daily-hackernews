@@ -88,8 +88,13 @@ def _api_get(url: str, params: dict, token: str | None) -> requests.Response:
     raise RuntimeError("unreachable")
 
 
-def fetch_issues(token: str | None = None) -> list[dict]:
-    """Fetch all issues labeled daily-digest, newest first."""
+def fetch_issues(token: str | None = None, stop_below: int | None = None) -> list[dict]:
+    """Fetch all issues labeled daily-digest, newest first.
+
+    stop_below stops pagination once a fetched page contains an issue with
+    number <= stop_below (the oldest number already covered by the manifest);
+    relies on GitHub's newest-first issue ordering.
+    """
     issues: list[dict] = []
     page = 1
     while True:
@@ -103,6 +108,8 @@ def fetch_issues(token: str | None = None) -> list[dict]:
         # Count the raw response: PRs filtered out would shrink a full page
         # and stop the fetch early.
         if len(raw) < 100:
+            break
+        if stop_below is not None and any((i.get("number", 0) or 0) <= stop_below for i in raw):
             break
         page += 1
     return issues
