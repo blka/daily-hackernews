@@ -191,8 +191,9 @@ def build_incremental(issues: list[dict], entries: list[dict], out_dir: str) -> 
 
     Semantics: within the new batch the highest issue number wins a date; a
     new issue beats the manifest only when its number is higher than the
-    manifest entry's number; anything at or below the oldest manifest number
-    is historical and skipped.
+    newest issue the manifest covers (numbers grow with creation, so anything
+    at or below that waterline is historical) and higher than any existing
+    manifest entry for its date.
     """
     digests = [
         {"date": parse_issue_date(i["title"]), "title": i["title"],
@@ -204,11 +205,11 @@ def build_incremental(issues: list[dict], entries: list[dict], out_dir: str) -> 
     for d in digests:
         winners.setdefault(d["date"], d)
 
-    min_number = min(e["number"] for e in entries)
+    covered_below = max(e["number"] for e in entries)
     by_date = {e["date"]: e for e in entries}
     for d in winners.values():
         date_iso = "-".join(d["date"])
-        if d["number"] <= min_number:
+        if d["number"] <= covered_below:
             continue
         man = by_date.get(date_iso)
         if man is not None and d["number"] <= man["number"]:
@@ -272,7 +273,9 @@ def main(out_dir: str = "site") -> None:
     token = os.environ.get("GITHUB_TOKEN")
     entries = load_manifest(out_dir)
     if entries is not None and _manifest_pages_exist(entries, out_dir):
-        stop_below = min(e["number"] for e in entries)
+        # Waterline is the newest built number: issues are fetched newest-first,
+        # so stopping at the page that contains it typically ends on page 1.
+        stop_below = max(e["number"] for e in entries)
         issues = fetch_issues(token=token, stop_below=stop_below)
         build_incremental(issues, entries, out_dir)
     else:

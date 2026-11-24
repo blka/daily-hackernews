@@ -390,6 +390,16 @@ class TestIncremental:
         assert "bee digest" in page and "dup digest" not in page
         assert len(self._entries(tmp_path)) == 2
 
+    def test_between_min_and_max_number_issue_is_skipped(self, tmp_path):
+        # Waterline is the NEWEST built number (max), not the oldest (min):
+        # "only new" means nothing below the newest built issue wins, even on
+        # a date it could otherwise beat.
+        build_site([_issue("05/10/2026", "alpha digest", number=300), _issue("04/10/2026", "bee digest", number=100)], str(tmp_path))
+        build_incremental([_issue("04/10/2026", "late digest", number=250)], self._entries(tmp_path), str(tmp_path))
+        page = (tmp_path / "digests" / "2026-10-04.html").read_text(encoding="utf-8")
+        assert "bee digest" in page and "late digest" not in page
+        assert len(self._entries(tmp_path)) == 2
+
     def test_index_rebuilt_from_manifest_plus_new(self, tmp_path):
         build_site([_issue("04/10/2026", "old digest text", number=100)], str(tmp_path))
         build_incremental([_issue("05/10/2026", "new digest text", number=200)], self._entries(tmp_path), str(tmp_path))
