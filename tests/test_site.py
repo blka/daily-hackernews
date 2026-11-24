@@ -164,6 +164,24 @@ class TestManifest:
             encoding="utf-8")
         assert load_manifest(str(tmp_path)) is None  # duplicate dates
 
+    def test_load_manifest_returns_none_on_empty(self, tmp_path):
+        (tmp_path / "manifest.json").write_text('{"pages": []}', encoding="utf-8")
+        assert load_manifest(str(tmp_path)) is None
+
+    def test_load_manifest_returns_none_on_semantic_mismatch(self, tmp_path):
+        import json
+        good = {"page_path": "digests/2026-10-04.html", "number": 1,
+                "title": "t", "date": "2026-10-04", "body": "b"}
+        for bad in [
+            {**good, "page_path": "digests/x.html"},           # junk path
+            {**good, "page_path": "digests/2026-10-05.html"},  # path/date mismatch
+            {**good, "date": "2026-10-4"},                     # bad date shape
+            {**good, "page_path": "../evil.html"},
+            {**good, "page_path": "/abs/path.html"},
+        ]:
+            (tmp_path / "manifest.json").write_text(json.dumps({"pages": [bad]}), encoding="utf-8")
+            assert load_manifest(str(tmp_path)) is None
+
 
 class TestFetchAuth:
     def _resp(self, data, status=200, headers=None):
