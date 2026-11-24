@@ -2,7 +2,13 @@
 
 import re
 
-from daily_hackernews.site import build_site, issue_date, load_manifest, parse_issue_date
+from daily_hackernews.site import (
+    build_incremental,
+    build_site,
+    issue_date,
+    load_manifest,
+    parse_issue_date,
+)
 
 
 def _issue(date: str, body: str, number: int = 1) -> dict:
@@ -337,3 +343,40 @@ class TestFetchIssues:
         result = site.fetch_issues(stop_below=150)
         assert len(calls) == 1  # raw page shorter than 100 → stop, no page 2
         assert result == []
+
+
+class TestIncremental:
+    def _entries(self, tmp_path):
+        import json
+        return json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))["pages"]
+
+    def test_new_date_adds_page_and_manifest_entry(self, tmp_path):
+        build_site([_issue("04/10/2026", "old digest text", number=100)], str(tmp_path))
+        build_incremental([_issue("05/10/2026", "new digest text", number=200)], self._entries(tmp_path), str(tmp_path))
+        assert "new digest text" in (tmp_path / "digests" / "2026-10-05.html").read_text(encoding="utf-8")
+        entries = self._entries(tmp_path)
+        assert len(entries) == 2
+        assert entries[0]["date"] == "2026-10-05"  # newest first
+
+    def test_same_date_newer_number_overrides_manifest(self, tmp_path):
+        build_site([_issue("04/10/2026", "old digest text", number=100)], str(tmp_path))
+        build_incremental([_issue("04/10/2026", "new digest text", number=200)], self._entries(tmp_path), str(tmp_path))
+        page = (tmp_path / "digests" / "2026-10-04.html").read_text(encoding="utf-8")
+        assert "new digest text" in page and "old digest text" not in page
+        assert self._entries(tmp_path)[0]["number"] == 200
+
+    def test_below_manifest_number_issue_is_skipped(self, tmp_path):
+        build_site([_issue("05/10/2026", "alpha digest", number=10), _issue("04/10/2026", "bee digest", number=100)], str(tmp_path))
+        build_incremental([_issue("04/10/2026", "dup digest", number=50)], self._entries(tmp_path), str(tmp_path))
+        page = (tmp_path / "digests" / "2026-10-04.html").read_text(encoding="utf-8")
+        assert "bee digest" in page and "dup digest" not in page
+        assert len(self._entries(tmp_path)) == 2
+
+    def test_index_rebuilt_from_manifest_plus_new(self, tmp_path):
+        build_site([_issue("04/10/2026", "old digest text", number=100)], str(tmp_path))
+        build_incremental([_issue("05/10/2026", "new digest text", number=200)], self._entries(tmp_path), str(tmp_path))
+        index = (tmp_path / "index.html").read_text(encoding="utf-8")
+        assert "05/10/2026" in index and "04/10/2026" in index
+        assert index.index("2026-10-05.html") < index.index("2026-10-04.html")
+        assert "new digest text" in index  # latest digest body on index
+        assert index.count("<details") == 1

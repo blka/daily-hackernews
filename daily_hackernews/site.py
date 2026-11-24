@@ -181,6 +181,45 @@ def load_manifest(out_dir: str) -> list[dict] | None:
         return None
 
 
+def build_incremental(issues: list[dict], entries: list[dict], out_dir: str) -> None:
+    """Render only issues not covered by the manifest; update manifest + index.
+
+    Semantics: within the new batch the highest issue number wins a date; a
+    new issue beats the manifest only when its number is higher than the
+    manifest entry's number; anything at or below the oldest manifest number
+    is historical and skipped.
+    """
+    digests = [
+        {"date": parse_issue_date(i["title"]), "title": i["title"],
+         "body": i["body"] or "", "number": i.get("number", 0) or 0}
+        for i in issues if parse_issue_date(i["title"]) is not None
+    ]
+    digests.sort(key=lambda d: (d["date"], d["number"]), reverse=True)
+    winners: dict = {}
+    for d in digests:
+        winners.setdefault(d["date"], d)
+
+    min_number = min(e["number"] for e in entries)
+    by_date = {e["date"]: e for e in entries}
+    for d in winners.values():
+        date_iso = "-".join(d["date"])
+        if d["number"] <= min_number:
+            continue
+        man = by_date.get(date_iso)
+        if man is not None and d["number"] <= man["number"]:
+            continue
+        page_path = _write_digest_page(d["title"], d["body"], d["date"], out_dir)
+        by_date[date_iso] = {"page_path": page_path, "number": d["number"],
+                             "title": d["title"], "date": date_iso, "body": d["body"]}
+
+    merged = sorted(by_date.values(), key=lambda e: e["date"], reverse=True)
+    write_manifest(out_dir, merged)
+    page_writes = [(e["page_path"], e["date"][:4], e["title"]) for e in merged]
+    latest = {"page_path": page_writes[0][0], "title": page_writes[0][2],
+              "body": merged[0]["body"]} if merged else None
+    _render_index(page_writes, latest, out_dir)
+
+
 def build_site(issues: list[dict], out_dir: str) -> None:
     """Render index.html and digests/<YYYY>-<MM>-<DD>.html into out_dir."""
     digests = [
