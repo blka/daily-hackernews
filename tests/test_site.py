@@ -2,7 +2,7 @@
 
 import re
 
-from daily_hackernews.site import build_site, issue_date, parse_issue_date
+from daily_hackernews.site import build_site, issue_date, load_manifest, parse_issue_date
 
 
 def _issue(date: str, body: str, number: int = 1) -> dict:
@@ -110,6 +110,53 @@ class TestBuildSite:
 class TestIssueDateHelper:
     def test_issue_date_helper(self):
         assert issue_date("Daily Hacker News 04/10/2026") == "04/10/2026"
+
+
+class TestManifest:
+    def _manifest(self, tmp_path):
+        import json
+        return json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+
+    def test_full_build_writes_manifest(self, tmp_path):
+        issues = [_issue("05/10/2026", "# a", number=2), _issue("04/10/2026", "# b", number=1)]
+        build_site(issues, str(tmp_path))
+        data = self._manifest(tmp_path)
+        assert [e["date"] for e in data["pages"]] == ["2026-10-05", "2026-10-04"]
+        entry = data["pages"][0]
+        assert entry == {
+            "page_path": "digests/2026-10-05.html",
+            "number": 2,
+            "title": "Daily Hacker News 05/10/2026",
+            "date": "2026-10-05",
+            "body": "# a",
+        }
+
+    def test_full_build_dedup_kept_in_manifest(self, tmp_path):
+        issues = [_issue("04/10/2026", "# OLD", number=100), _issue("04/10/2026", "# NEW", number=200)]
+        build_site(issues, str(tmp_path))
+        assert len(self._manifest(tmp_path)["pages"]) == 1
+        assert self._manifest(tmp_path)["pages"][0]["number"] == 200
+
+    def test_load_manifest_roundtrip(self, tmp_path):
+        issues = [_issue("04/10/2026", "# b", number=1)]
+        build_site(issues, str(tmp_path))
+        assert load_manifest(str(tmp_path)) == self._manifest(tmp_path)["pages"]
+
+    def test_load_manifest_returns_none_on_missing(self, tmp_path):
+        assert load_manifest(str(tmp_path)) is None
+
+    def test_load_manifest_returns_none_on_corrupt(self, tmp_path):
+        (tmp_path / "manifest.json").write_text("not json{", encoding="utf-8")
+        assert load_manifest(str(tmp_path)) is None
+
+    def test_load_manifest_returns_none_on_bad_entries(self, tmp_path):
+        (tmp_path / "manifest.json").write_text('{"pages": [{"page_path": "x"}]}', encoding="utf-8")
+        assert load_manifest(str(tmp_path)) is None
+        (tmp_path / "manifest.json").write_text(
+            '{"pages": [{"page_path": "a", "number": 1, "title": "t", "date": "2026-10-04", "body": "b"},'
+            '{"page_path": "c", "number": 1, "title": "t", "date": "2026-10-04", "body": "b"}]}',
+            encoding="utf-8")
+        assert load_manifest(str(tmp_path)) is None  # duplicate dates
 
 
 class TestFetchIssues:

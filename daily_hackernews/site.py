@@ -6,6 +6,7 @@ Usage: python -m daily_hackernews.site [output_dir]  (default: ./site)
 from __future__ import annotations
 
 import html
+import json
 import os
 import re
 import sys
@@ -119,6 +120,39 @@ def _render_index(page_writes: list[tuple[str, str, str]], latest: dict | None, 
         f.write(_page(index))
 
 
+MANIFEST_PATH = "manifest.json"
+# One entry per built page: public issue data only.
+_ENTRY_KEYS = {"page_path": str, "number": int, "title": str, "date": str, "body": str}
+
+
+def write_manifest(out_dir: str, entries: list[dict]) -> None:
+    """Write {"pages": entries} to out_dir/manifest.json."""
+    with open(os.path.join(out_dir, MANIFEST_PATH), "w", encoding="utf-8") as f:
+        json.dump({"pages": entries}, f, ensure_ascii=False)
+
+
+def load_manifest(out_dir: str) -> list[dict] | None:
+    """Read manifest.json back, or None when missing/corrupt."""
+    try:
+        with open(os.path.join(out_dir, MANIFEST_PATH), encoding="utf-8") as f:
+            data = json.load(f)
+        entries = data["pages"]
+        if not isinstance(entries, list):
+            return None
+        for e in entries:
+            if not isinstance(e, dict):
+                return None
+            for key, typ in _ENTRY_KEYS.items():
+                if isinstance(typ, dict) or not isinstance(e.get(key), typ) or isinstance(e.get(key), bool):
+                    return None
+        dates = [e["date"] for e in entries]
+        if len(set(dates)) != len(dates):
+            return None
+        return entries
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def build_site(issues: list[dict], out_dir: str) -> None:
     """Render index.html and digests/<YYYY>-<MM>-<DD>.html into out_dir."""
     digests = [
@@ -140,6 +174,10 @@ def build_site(issues: list[dict], out_dir: str) -> None:
     page_writes = [(_write_digest_page(d["title"], d["body"], d["date"], out_dir), d["date"][0], d["title"]) for d in unique]
     latest = {"page_path": page_writes[0][0], "title": page_writes[0][2], "body": unique[0]["body"]} if page_writes else None
     _render_index(page_writes, latest, out_dir)
+
+    entries = [{"page_path": p, "number": d["number"], "title": d["title"],
+                "date": "-".join(d["date"]), "body": d["body"]} for (p, _, _), d in zip(page_writes, unique)]
+    write_manifest(out_dir, entries)
 
 
 def _page(body_html: str) -> str:
