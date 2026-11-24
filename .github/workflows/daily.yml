@@ -2,7 +2,7 @@ name: Daily HackerNews
 
 on:
   schedule:
-    - cron: '0 9 * * *'
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 jobs:
