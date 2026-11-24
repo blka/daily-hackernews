@@ -380,3 +380,68 @@ class TestIncremental:
         assert index.index("2026-10-05.html") < index.index("2026-10-04.html")
         assert "new digest text" in index  # latest digest body on index
         assert index.count("<details") == 1
+
+
+class TestMainFlow:
+    def test_full_rebuild_when_no_manifest(self, tmp_path, monkeypatch):
+        import daily_hackernews.site as site
+
+        seen = {}
+
+        def fake_fetch(token=None, stop_below=None):
+            seen["stop_below"] = stop_below
+            return [_issue("04/10/2026", "digest text", number=1)]
+
+        monkeypatch.setattr(site, "fetch_issues", fake_fetch)
+        site.main(str(tmp_path))
+        assert seen["stop_below"] is None           # full path: no early stop
+        assert (tmp_path / "manifest.json").exists()
+
+    def test_incremental_run_uses_manifest(self, tmp_path, monkeypatch):
+        import daily_hackernews.site as site
+
+        monkeypatch.setattr(site, "fetch_issues", lambda token=None, stop_below=None: [_issue("04/10/2026", "day one", number=1)])
+        site.main(str(tmp_path))                    # full build seeds manifest + pages
+        before = (tmp_path / "digests" / "2026-10-04.html").read_bytes()
+        captured = {}
+
+        def fake_fetch2(token=None, stop_below=None):
+            captured["stop_below"] = stop_below
+            return [_issue("05/10/2026", "day two", number=2)]
+
+        monkeypatch.setattr(site, "fetch_issues", fake_fetch2)
+        site.main(str(tmp_path))
+        assert captured["stop_below"] == 1          # oldest manifest number
+        assert (tmp_path / "digests" / "2026-10-05.html").exists()
+        assert (tmp_path / "digests" / "2026-10-04.html").read_bytes() == before  # old page untouched
+        assert (tmp_path / "index.html").read_text(encoding="utf-8").count("2026-10-04.html") >= 1
+
+    def test_main_falls_back_to_full_rebuild(self, tmp_path, monkeypatch):
+        import daily_hackernews.site as site
+
+        (tmp_path / "manifest.json").write_text("garbage", encoding="utf-8")
+        seen = {}
+
+        def fake_fetch(token=None, stop_below=None):
+            seen["stop_below"] = stop_below
+            return [_issue("04/10/2026", "digest text", number=1)]
+
+        monkeypatch.setattr(site, "fetch_issues", fake_fetch)
+        site.main(str(tmp_path))
+        assert seen["stop_below"] is None
+
+    def test_main_falls_back_when_page_files_missing(self, tmp_path, monkeypatch):
+        import daily_hackernews.site as site
+
+        monkeypatch.setattr(site, "fetch_issues", lambda token=None, stop_below=None: [_issue("04/10/2026", "digest text", number=1)])
+        site.main(str(tmp_path))
+        (tmp_path / "digests" / "2026-10-04.html").unlink()
+        seen = {}
+
+        def fake_fetch2(token=None, stop_below=None):
+            seen["stop_below"] = stop_below
+            return []
+
+        monkeypatch.setattr(site, "fetch_issues", fake_fetch2)
+        site.main(str(tmp_path))
+        assert seen["stop_below"] is None

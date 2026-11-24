@@ -258,10 +258,22 @@ def _page(body_html: str) -> str:
     )
 
 
+def _manifest_pages_exist(entries: list[dict], out_dir: str) -> bool:
+    """Every manifest entry has its page file on disk (partial cache guard)."""
+    return all(os.path.exists(os.path.join(out_dir, e["page_path"])) for e in entries)
+
+
 def main(out_dir: str = "site") -> None:
-    issues = fetch_issues()
+    token = os.environ.get("GITHUB_TOKEN")
+    entries = load_manifest(out_dir)
+    if entries is not None and _manifest_pages_exist(entries, out_dir):
+        stop_below = min(e["number"] for e in entries)
+        issues = fetch_issues(token=token, stop_below=stop_below)
+        build_incremental(issues, entries, out_dir)
+    else:
+        issues = fetch_issues(token=token)
+        build_site(issues, out_dir)
     print(f"Fetched {len(issues)} digest issues")
-    build_site(issues, out_dir)
     print(f"Site built in {out_dir}")
 
 
