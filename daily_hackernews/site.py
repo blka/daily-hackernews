@@ -86,6 +86,39 @@ def fetch_issues() -> list[dict]:
     return issues
 
 
+def _write_digest_page(title: str, body: str, date: tuple[str, str, str], out_dir: str) -> str:
+    """Write digests/<YYYY>-<MM>-<DD>.html into out_dir, return the page_path."""
+    year, month, day = date
+    page_path = f"digests/{year}-{month}-{day}.html"
+    page = _page(f"<h1>{html.escape(title, quote=False)}</h1>\n{_body_to_html(body)}")
+    os.makedirs(os.path.join(out_dir, "digests"), exist_ok=True)
+    with open(os.path.join(out_dir, page_path), "w", encoding="utf-8") as f:
+        f.write(page)
+    return page_path
+
+
+def _render_index(page_writes: list[tuple[str, str, str]], latest: dict | None, out_dir: str) -> None:
+    """Render index.html: optional latest digest, then the collapsed archive."""
+    index = "<h1>Daily Hacker News</h1>\n"
+    if latest:
+        page_path, title = latest["page_path"], latest["title"]
+        index += f'\n<h2><a href="{page_path}">{html.escape(title, quote=False)}</a></h2>'
+        index += "\n" + _body_to_html(latest["body"])
+
+    # Collapsed archive, grouped by year — keeps the index short.
+    index += '\n<hr>\n<details>\n<summary>Archive — all days</summary>\n'
+    by_year: dict[str, list[str]] = {}
+    for page_path, year, title in page_writes:
+        by_year.setdefault(year, []).append(
+            f'<li><a href="{page_path}">{html.escape(title, quote=False)}</a></li>'
+        )
+    for year in by_year:
+        index += f"\n<strong>{year}</strong>\n<ul>" + "".join(by_year[year]) + "</ul>"
+    index += "\n</details>\n"
+    with open(os.path.join(out_dir, "index.html"), "w", encoding="utf-8") as f:
+        f.write(_page(index))
+
+
 def build_site(issues: list[dict], out_dir: str) -> None:
     """Render index.html and digests/<YYYY>-<MM>-<DD>.html into out_dir."""
     digests = [
@@ -103,38 +136,10 @@ def build_site(issues: list[dict], out_dir: str) -> None:
             continue
         seen.add(d["date"])
         unique.append(d)
-    digests = unique
 
-    os.makedirs(os.path.join(out_dir, "digests"), exist_ok=True)
-
-    page_writes = []
-    for d in digests:
-        year, month, day = d["date"]
-        page_path = f"digests/{year}-{month}-{day}.html"
-        page = _page(f"<h1>{html.escape(d['title'], quote=False)}</h1>\n{_body_to_html(d['body'])}")
-        with open(os.path.join(out_dir, page_path), "w", encoding="utf-8") as f:
-            f.write(page)
-        page_writes.append((page_path, year, d["title"]))
-
-    latest = page_writes[0] if page_writes else None
-    index = "<h1>Daily Hacker News</h1>\n"
-    if latest:
-        page_path, year, title = latest
-        index += f'\n<h2><a href="{page_path}">{html.escape(title, quote=False)}</a></h2>'
-        index += "\n" + _body_to_html(digests[0]["body"])
-
-    # Collapsed archive, grouped by year — keeps the index short.
-    index += '\n<hr>\n<details>\n<summary>Archive — all days</summary>\n'
-    by_year: dict[str, list[str]] = {}
-    for page_path, year, title in page_writes:
-        by_year.setdefault(year, []).append(
-            f'<li><a href="{page_path}">{html.escape(title, quote=False)}</a></li>'
-        )
-    for year in by_year:
-        index += f"\n<strong>{year}</strong>\n<ul>" + "".join(by_year[year]) + "</ul>"
-    index += "\n</details>\n"
-    with open(os.path.join(out_dir, "index.html"), "w", encoding="utf-8") as f:
-        f.write(_page(index))
+    page_writes = [(_write_digest_page(d["title"], d["body"], d["date"], out_dir), d["date"][0], d["title"]) for d in unique]
+    latest = {"page_path": page_writes[0][0], "title": page_writes[0][2], "body": unique[0]["body"]} if page_writes else None
+    _render_index(page_writes, latest, out_dir)
 
 
 def _page(body_html: str) -> str:
