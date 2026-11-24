@@ -43,6 +43,44 @@ def create_issue(title: str, body: str, labels: list[str] | None = None) -> str:
     return data["html_url"]
 
 
+def find_issue_by_title(title: str) -> int | None:
+    """Return the number of an existing daily-digest issue with this exact
+    title, or None.
+
+    Raises on a non-200 response: a guard error must be loud, not a silent
+    pass-through to duplicate creation.
+    """
+    token = os.environ.get("ACCESS_TOKEN")
+    if not token:
+        raise RuntimeError("ACCESS_TOKEN environment variable is not set")
+
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"token {token}",
+    }
+    page = 1
+    while True:
+        resp = requests.get(
+            GITHUB_API_URL,
+            params={"labels": "daily-digest", "per_page": 100, "page": page},
+            headers=headers,
+            verify=certifi.where(),
+            timeout=30,
+        )
+        if resp.status_code != 200:
+            raise RuntimeError(f"Failed to list issues: {resp.status_code} {resp.text}")
+        raw = resp.json()
+        issues = [i for i in raw if "pull_request" not in i]
+        for issue in issues:
+            if issue.get("title") == title:
+                return issue["number"]
+        # Count the raw response: PRs filtered out would shrink a full page
+        # and stop the lookup early.
+        if len(raw) < 100:
+            return None
+        page += 1
+
+
 def lock_issue(issue_url: str) -> bool:
     """Lock a GitHub Issue. Returns True on success."""
     token = os.environ.get("ACCESS_TOKEN")
