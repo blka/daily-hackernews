@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
 import certifi
 import requests
@@ -54,7 +55,12 @@ def lock_issue(issue_url: str) -> bool:
     }
     payload = {"lock_reason": "too heated"}
 
+    m = re.match(r"https://github\.com/([^/]+/[^/]+)/issues/(\d+)/?$", issue_url)
+    if not m:
+        return False
+    api_url = f"https://api.github.com/repos/{m.group(1)}/issues/{m.group(2)}/lock"
+
     resp = requests.put(
-        f"{issue_url}/lock", json=payload, headers=headers, verify=certifi.where(), timeout=30
+        api_url, json=payload, headers=headers, verify=certifi.where(), timeout=30
     )
     return resp.status_code == 204
